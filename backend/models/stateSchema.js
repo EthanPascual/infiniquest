@@ -5,7 +5,7 @@ const gameStateSchema = new mongoose.Schema({
     description: { type: String, required: true },
     actions: [
         {
-            actionText: { type: String, required: true }, // player input
+            actionText: { type: String, required: true },
             nextStateId: { type: mongoose.Schema.Types.ObjectId, ref: 'GameState' }
         }
     ]
