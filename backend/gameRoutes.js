@@ -2,10 +2,10 @@ const express = require('express')
 const {getState, createState, getUserConvo, createUserConvo, takeAction} = require('./gameController.js')
 const router = express.Router()
 
-router.get('/state/:id', getState)
+router.get('/state/:Id', getState)
 router.post('/createState', createState)
-router.get('/user/:userid', getUserConvo)
+router.get('/user/:userId', getUserConvo)
 router.post('/createUser', createUserConvo)
-router.put('/:id/:userId/action', takeAction)
+router.put('/:Id/:userId/action', takeAction)
 
 module.exports = router;
