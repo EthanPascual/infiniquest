@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const userConvo = mongoose.Schema({
-    userId: Number,
+    userId: String,
     convo: [{
         role: String,
         content: String
