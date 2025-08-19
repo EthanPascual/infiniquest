@@ -25,8 +25,8 @@ async function testRun() {
     const stateResponse = await axios.post(`${url}/createState`, testStateData);
     const stateId = stateResponse.data._id;
 
-    const fetchedState = await axios.get(`${url}/${stateId}`);
-    let userConvo = await axios.get(`${url}/convo/${testId}`);
+    const fetchedState = await axios.get(`${url}/state/${stateId}`);
+    let userConvo = await axios.get(`${url}/user/${testId}`);
     console.log(userConvo.data)
 
     const actionResponse = await axios.put(`${url}/${stateId}/${testId}/action`, {

@@ -27,7 +27,7 @@ const createUserConvo = async (req, res) => {
 
 const takeAction = async(req, res) => {
     //find current state in db. There should always be one
-    const currState = await fetchStateById(req.params.id)
+    const currState = await fetchStateById(req.params.Id)
     const userConvo = await fetchUserById(req.params.userId)
 
     //sees if action matches anything in possible actions, if it does, it returns the next game state. else, calls chatgpt and creates a new game state
