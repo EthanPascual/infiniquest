@@ -15,7 +15,7 @@ const createState = async(req, res) => {
 
 const getUserConvo = async (req, res) => {
     const user = await fetchUserById(req.params.userId)
-    res.json(user.convo)
+    res.json(user)
 }
 
 const createUserConvo = async (req, res) => {
@@ -53,7 +53,6 @@ const takeAction = async(req, res) => {
             nextStateId: gameState._id
         })
         await currState.save()
-
         userConvo.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: newStoryLine})
         await userConvo.save()
         res.json(gameState)
