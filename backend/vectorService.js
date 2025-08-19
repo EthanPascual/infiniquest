@@ -42,3 +42,6 @@ if the current action called does not yield a high enough similarity, disregard 
 function to delete vectors?
 
 */
+
+
+module.exports = {storeGameAction}

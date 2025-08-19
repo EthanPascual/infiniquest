@@ -4,8 +4,8 @@ const router = express.Router()
 
 router.get('/:id', getState)
 router.post('/createState', createState)
-router.get('/:userid', getUserConvo)
+router.get('/convo/:userId', getUserConvo)
 router.post('/createUser', createUserConvo)
-router.put('/:id/:userid/action', takeAction)
+router.put('/:id/:userId/action', takeAction)
 
 module.exports = router;
