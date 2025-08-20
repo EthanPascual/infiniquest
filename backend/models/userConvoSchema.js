@@ -6,8 +6,8 @@ const userConvo = mongoose.Schema({
     convo: [{
         role: String,
         content: String,
-        currGameState: { type: mongoose.Schema.Types.ObjectId, ref: 'GameState' }
-    }]
+    }],
+    currGameState: { type: mongoose.Schema.Types.ObjectId, ref: 'GameState' }
 })
 
 module.exports = mongoose.model('UserConvo', userConvo);

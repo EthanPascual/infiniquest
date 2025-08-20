@@ -24,28 +24,20 @@ const testStateData = {
 
 async function testRun() {
     const response = await axios.delete(delUrl);
+
+    
+    console.log('Creating game state');
+    const stateResponse = await axios.post(`${url}/createState`, testStateData);
+
     console.log('Creating user state');
     const userResponse = await axios.post(`${url}/createUser`, testUserData);
 
-    console.log('Creating game state');
-    const stateResponse = await axios.post(`${url}/createState`, testStateData);
-    const stateId = stateResponse.data._id;
-
-    const fetchedState = await axios.get(`${url}/state/${stateId}`);
     let userConvo = await axios.get(`${url}/user/${testId}`);
     console.log(userConvo.data)
 
-    const actionResponse = await axios.put(`${url}/${stateId}/${testId}/action`, {
+    const actionResponse = await axios.put(`${url}/${testId}/action`, {
         action: "Time to go train in the forest"
     });
-    
-    console.log('Creating user state2');
-    const userResponse2 = await axios.post(`${url}/createUser`, testUserData2);
-    const actionResponse2 = await axios.put(`${url}/${stateId}/${testId2}/action`, {
-        action: "I want to go train in the forest"
-    });
-    let userConvo2 = await axios.get(`${url}/user/${testId2}`);
-    console.log(userConvo2.data)
     
 }
 
