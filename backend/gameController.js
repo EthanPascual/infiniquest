@@ -41,7 +41,6 @@ const createUserConvo = async (req, res) => {
 const takeAction = async(req, res) => {
     //find current state in db. There should always be one
     const user = await fetchUserById(req.params.userId)
-    console.log(user)
     const currState = await fetchStateById(user.currGameState)
     //sees if action matches anything in possible actions, if it does, it returns the next game state. else, calls chatgpt and creates a new game state
     const userAction = req.body.action
@@ -53,6 +52,7 @@ const takeAction = async(req, res) => {
     const foundAction = actions.find(action => action.actionText === userAction)
     if(foundAction){
         user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})
+        user.currGameState = foundAction.nextStateId
         await user.save()
         res.json(foundAction.nextStateId)
     } else {
@@ -70,6 +70,7 @@ const takeAction = async(req, res) => {
         })
         await currState.save()
         user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: newStoryLine})
+        user.currGameState = gameState._id
         await user.save()
         res.json(gameState)
 
