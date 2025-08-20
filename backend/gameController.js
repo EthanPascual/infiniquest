@@ -20,17 +20,28 @@ const getUserConvo = async (req, res) => {
 }
 
 const createUserConvo = async (req, res) => {
+  try {
+    const startState = await GameState.findOne({ stateName: "Knight Beginning" });
+    console.log(startState)
+    if (!startState) {
+      return res.status(400).json({ error: "Start state not found" });
+    }
     const user = new UserConvo(req.body);
-    await user.save()
-    res.json(user)
-}
+    user.currGameState = startState._id;
+    user.convo = [{ role: "assistant", content: startState.description }];
+    await user.save();
+    res.json(user);
+  } catch (err) {
+    console.error("Error creating user convo:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 
 const takeAction = async(req, res) => {
     //find current state in db. There should always be one
-    const currState = await fetchStateById(req.params.Id)
-    const userConvo = await fetchUserById(req.params.userId)
-
+    const user = await fetchUserById(req.params.userId)
+    const currState = user.currGameState
     //sees if action matches anything in possible actions, if it does, it returns the next game state. else, calls chatgpt and creates a new game state
     const userAction = req.body.action
     const actions = currState.actions
@@ -40,8 +51,8 @@ const takeAction = async(req, res) => {
     
     const foundAction = actions.find(action => action.actionText === userAction)
     if(foundAction){
-        userConvo.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})
-        await userConvo.save()
+        user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})
+        await user.save()
         res.json(foundAction.nextStateId)
     } else {
         const newStoryLine =  await generateStoryLine(userConvo.convo, userAction)
@@ -57,8 +68,8 @@ const takeAction = async(req, res) => {
             nextStateId: gameState._id
         })
         await currState.save()
-        userConvo.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: newStoryLine})
-        await userConvo.save()
+        user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: newStoryLine})
+        await user.save()
         res.json(gameState)
 
     }

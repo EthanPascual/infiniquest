@@ -6,6 +6,6 @@ router.get('/state/:Id', getState)
 router.post('/createState', createState)
 router.get('/user/:userId', getUserConvo)
 router.post('/createUser', createUserConvo)
-router.put('/:Id/:userId/action', takeAction)
+router.put('/:userId/action', takeAction)
 
 module.exports = router;
