@@ -5,7 +5,7 @@ const userConvo = mongoose.Schema({
     convo: [{
         role: String,
         content: String
-    }]
+    }]  
 })
 
 module.exports = mongoose.model('UserConvo', userConvo);

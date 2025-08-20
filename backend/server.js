@@ -2,7 +2,7 @@ const express = require('express')
 const app = express()
 const port = 3000
 require('dotenv').config()
-const connectDB = require('./config.js')
+const {connectDB, connectVectorDB, connectOpenAI} = require('./config.js')
 const gameRoutes = require('./gameRoutes.js')
 const cors = require('cors')
 
@@ -12,7 +12,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
 connectDB();
+connectVectorDB();
+connectOpenAI();
 
 app.use('/api/game', gameRoutes);
 

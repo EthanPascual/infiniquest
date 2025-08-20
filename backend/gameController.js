@@ -1,6 +1,7 @@
 const GameState = require('./models/stateSchema')
 const UserConvo = require('./models/userConvoSchema')
-const {generateStoryLine} = require('./storyCreationService')
+const { generateStoryLine } = require('./storyCreationService')
+const { searchCreateVector } = require('./vectorService.js')
 
 const getState = async (req, res) => {
     const state = await fetchStateById(req.params.id)
@@ -33,7 +34,10 @@ const takeAction = async(req, res) => {
     //sees if action matches anything in possible actions, if it does, it returns the next game state. else, calls chatgpt and creates a new game state
     const userAction = req.body.action
     const actions = currState.actions
-
+    
+    // Search Vector DB for actions, if found return the most similar 
+    searchCreateVector(userAction);
+    
     const foundAction = actions.find(action => action.actionText === userAction)
     if(foundAction){
         userConvo.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})

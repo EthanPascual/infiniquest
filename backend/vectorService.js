@@ -1,47 +1,62 @@
-const { Pinecone } = require('@pinecone-database/pinecone');
+const { getPineconeClient, getPineconeIndex } = require('./config.js');
+const { getOpenAI } = require("./config")
 
-const pc = new Pinecone({
-    apiKey: process.env.PINECONE_KEY
-});
+function generateEmbedding(text) {
+    const openai = getOpenAI();
+    return openai.embeddings.create({
+        model: "text-embedding-3-small", 
+        input: text,
+        dimensions: 1024
+    })
+    .then(response => {
+        return response.data[0].embedding;
+    })
+    .catch(error => {
+        console.error('Error generating embedding:', error);
+        throw error;
+    });
 
-const indexName = 'infiniquest';
-const index = pc.index(indexName);
-
-async function storeGameAction(data) {
-    // user game action is fed in to this function
-    const { stateName, stateDescription, stateActions, userId } = data;
-
-    // create and store vector
-    const vector = {
-        id: actionId,
-        values: embedding,
-        metadata: {
-            stateName: stateName,
-            stateDescription: stateDescription,
-            stateActions: stateActions,
-            userId: userId,
-            timestamp: new Date().toISOString()
-        }
-    };
-
-    await index.upsert([vector]);
-    console.log(`Stored Vector in DB`);
 }
 
-// idea is we can store past actions in case any future actions reference old parts of the story.
+async function searchCreateVector(userAction) {
+    
+    const pineconeIndex = getPineconeIndex().namespace("actions");
+    if (!pineconeIndex) {
+            throw new Error('Pinecone index not initialized');
+    }
 
-// these vectors if returned are then added to ai generation calls to enhance story creation
+    const userActionEmbedding = await generateEmbedding(userAction);
+    const retrieveVectorQuery = await pineconeIndex.query({
+            vector: userActionEmbedding,           
+            topK: 10,                           
+            includeMetadata: true           
+    });
+    console.log(retrieveVectorQuery)
+    if (retrieveVectorQuery.matches && retrieveVectorQuery.matches.length > 0){
+        // vector matches were found
 
-// TO BE CREATED
+        const top = retrieveVectorQuery.matches[0]
 
-/* 
+        if (top.score >= .90){
+            return{
+                action: top.metadata.action
+            }
+        }
+    }
+    else{
+        // no match found, adding action to vector db
+        const vectorId = `${Date.now()}`;
+        await pineconeIndex.upsert([{
+            id: vectorId,
+            values: userActionEmbedding,
+            metadata: {
+                action: userAction,
+            }
+        }]);
 
-function to search and return most similar vector pertaining to the user
-if the current action called does not yield a high enough similarity, disregard and make ai call without vector
+    }
 
-function to delete vectors?
-
-*/
+}
 
 
-module.exports = {storeGameAction}
+module.exports = {searchCreateVector}
