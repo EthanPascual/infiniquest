@@ -15,9 +15,14 @@ function Game () {
         fetchConvo(id)
     }, [])
 
-    const handleSubmit = (e) => {
+    const addConvo = (item) => {
+        setConvo(prev => [...prev, item]) 
+    }
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("submitted an action")
+        addConvo({role: 'user', content: action})
         setAction("")
     }
 
