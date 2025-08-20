@@ -6,14 +6,19 @@ function Game () {
     const navigate = useNavigate()
     const [convo, setConvo] = useState([])
     const [action, setAction] = useState("")
+    const [id, setId] = useState("")
 
     useEffect(() => {
-        async function fetchConvo(id){
-            await axios.get(`http://localhost:3000/api/game/user/${id}`).then((res) => setConvo(res.data.convo))
-        }
-        let id = sessionStorage.getItem("sessionId")
-        fetchConvo(id)
-    }, [])
+    const sessionId = sessionStorage.getItem("sessionId")
+    if (!sessionId) return
+
+    async function fetchConvo(id) {
+        const res = await axios.get(`http://localhost:3000/api/game/user/${id}`)
+        setConvo(res.data.convo)
+    }
+
+    fetchConvo(sessionId)
+}, [])
 
     const addConvo = (item) => {
         setConvo(prev => [...prev, item]) 
@@ -21,9 +26,14 @@ function Game () {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const sessionId = sessionStorage.getItem("sessionId");
         console.log("submitted an action")
         addConvo({role: 'user', content: action})
+        let message = action
         setAction("")
+        const gameState = await axios.put(`http://localhost:3000/api/game/${sessionId}/action`, {action:message})
+        console.log(gameState.data.description)
+        addConvo({role:"assistant", content: gameState.data.description})
     }
 
     return(
