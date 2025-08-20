@@ -31,14 +31,15 @@ async function searchCreateVector(userAction) {
             topK: 10,                           
             includeMetadata: true           
     });
-    console.log(retrieveVectorQuery)
+
     if (retrieveVectorQuery.matches && retrieveVectorQuery.matches.length > 0){
         // vector matches were found
 
         const top = retrieveVectorQuery.matches[0]
 
-        if (top.score >= .90){
+        if (top.score >= .80){
             return{
+
                 action: top.metadata.action
             }
         }
@@ -54,6 +55,9 @@ async function searchCreateVector(userAction) {
             }
         }]);
 
+        return {
+            action: null
+        }
     }
 
 }

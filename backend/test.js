@@ -39,6 +39,15 @@ async function testRun() {
         action: "Time to go train in the forest"
     });
     
+    console.log('Creating user state2');
+    const userResponse2 = await axios.post(`${url}/createUser`, testUserData2);
+
+    const actionResponse2 = await axios.put(`${url}/${testId2}/action`, {
+        action: "I want to go train at home"
+    });
+
+    let userConvo2 = await axios.get(`${url}/user/${testId2}`);
+    console.log(userConvo.data)
 }
 
 testRun();

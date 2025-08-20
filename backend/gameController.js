@@ -22,7 +22,6 @@ const getUserConvo = async (req, res) => {
 const createUserConvo = async (req, res) => {
   try {
     const startState = await GameState.findOne({ stateName: "Knight Beginning" });
-    console.log(startState)
     if (!startState) {
       return res.status(400).json({ error: "Start state not found" });
     }
@@ -47,16 +46,17 @@ const takeAction = async(req, res) => {
     const actions = currState.actions
 
     // Search Vector DB for actions, if found return the most similar 
-    searchCreateVector(userAction);
+    const vectorSearch = await searchCreateVector(userAction);
+
+    const foundAction = vectorSearch?.action && actions.find(action => action.actionText === vectorSearch.action);
     
-    const foundAction = actions.find(action => action.actionText === userAction)
     if(foundAction){
         user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})
         user.currGameState = foundAction.nextStateId
         await user.save()
         res.json(foundAction.nextStateId)
     } else {
-        const newStoryLine =  await generateStoryLine(userConvo.convo, userAction)
+        const newStoryLine =  await generateStoryLine(user.convo, userAction)
         const gameState = new GameState({
             stateName: userAction,
             description: newStoryLine,
