@@ -1,6 +1,8 @@
 const { mongoose } = require('mongoose')
 const { Pinecone } = require('@pinecone-database/pinecone');
 const { OpenAI } = require("openai")
+const { ChatOpenAI, OpenAIEmbeddings } = require("@langchain/openai");
+
 require('dotenv').config()
 
 const connectDB = async () => {
@@ -32,19 +34,18 @@ const connectVectorDB = async () => {
 const getPineconeClient = () => pineconeClient;
 const getPineconeIndex = () => pineconeIndex;
 
-let openaiClient = null;
-const connectOpenAI = () => {
-    try {
-        openaiClient = new OpenAI({
-            apiKey: process.env.Open_AI_KEY
-        });
-        console.log("OpenAI client connceted");
-        return openaiClient;
-    } catch (error) {
-        console.error("Error Connecting OpenAI", error);
-        throw error;
-    }
-}
-const getOpenAI = () => openaiClient;
+const createLangChain = () =>
+  new ChatOpenAI({
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    openAIApiKey: process.env.Open_AI_KEY,
+  });
 
-module.exports = {connectDB, connectVectorDB, getPineconeClient, getPineconeIndex, connectOpenAI, getOpenAI};
+const getLangChainEmbeddings = () =>
+  new OpenAIEmbeddings({
+    model: "text-embedding-3-small",
+    openAIApiKey: process.env.Open_AI_KEY,
+    dimensions: 1024,
+  });
+
+module.exports = {connectDB, connectVectorDB, getPineconeClient, getPineconeIndex, createLangChain, getLangChainEmbeddings};
