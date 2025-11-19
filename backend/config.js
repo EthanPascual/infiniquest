@@ -1,6 +1,5 @@
 const { mongoose } = require('mongoose')
 const { Pinecone } = require('@pinecone-database/pinecone');
-const { OpenAI } = require("openai")
 const { ChatOpenAI, OpenAIEmbeddings } = require("@langchain/openai");
 
 require('dotenv').config()
@@ -38,13 +37,13 @@ const createLangChain = () =>
   new ChatOpenAI({
     model: "gpt-4o-mini",
     temperature: 0.7,
-    openAIApiKey: process.env.Open_AI_KEY,
+    openAIApiKey: process.env.OPENAI_API_KEY,
   });
 
 const getLangChainEmbeddings = () =>
   new OpenAIEmbeddings({
     model: "text-embedding-3-small",
-    openAIApiKey: process.env.Open_AI_KEY,
+    openAIApiKey: process.env.OPENAI_API_KEY,
     dimensions: 1024,
   });
 
