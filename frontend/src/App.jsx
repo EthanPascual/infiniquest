@@ -15,7 +15,7 @@ function App() {
 
   useEffect(() => {
     async function createUser(id){
-      await axios.post('http://localhost:3000/api/game/createUser', {userId: id})
+      await axios.post('http://localhost:3001/api/game/createUser', {userId: id})
     }
 
     let id = sessionStorage.getItem("sessionId")

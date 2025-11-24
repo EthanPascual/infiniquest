@@ -6,14 +6,13 @@ function Game () {
     const navigate = useNavigate()
     const [convo, setConvo] = useState([])
     const [action, setAction] = useState("")
-    const [id, setId] = useState("")
 
     useEffect(() => {
     const sessionId = sessionStorage.getItem("sessionId")
     if (!sessionId) return
 
     async function fetchConvo(id) {
-        const res = await axios.get(`http://localhost:3000/api/game/user/${id}`)
+        const res = await axios.get(`http://localhost:3001/api/game/user/${id}`)
         setConvo(res.data.convo)
     }
 
@@ -31,7 +30,7 @@ function Game () {
         addConvo({role: 'user', content: action})
         let message = action
         setAction("")
-        const gameState = await axios.put(`http://localhost:3000/api/game/${sessionId}/action`, {action:message})
+        const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, {action:message})
         console.log(gameState.data.description)
         addConvo({role:"assistant", content: gameState.data.description})
     }
