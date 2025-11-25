@@ -1,6 +1,7 @@
 import {useNavigate} from "react-router-dom"
 import {useState, useEffect} from "react"
 import axios from 'axios'
+import {toast} from  "react-toastify"
 
 function Game () {
     const navigate = useNavigate()
@@ -27,12 +28,21 @@ function Game () {
         e.preventDefault();
         const sessionId = sessionStorage.getItem("sessionId");
         console.log("submitted an action")
-        addConvo({role: 'user', content: action})
+        
         let message = action
         setAction("")
-        const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, {action:message})
-        console.log(gameState.data.description)
-        addConvo({role:"assistant", content: gameState.data.description})
+        try{
+            const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, {action:message})
+            addConvo({role: 'user', content: action})
+            console.log(gameState.data.description)
+            addConvo({role:"assistant", content: gameState.data.description})
+        }catch(error){
+            console.log("we have reached the error")
+            const errMessage = error.response.data.message
+            console.log(errMessage)
+            alert(errMessage)
+        }
+        
     }
 
     return(

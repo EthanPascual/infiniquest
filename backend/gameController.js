@@ -1,6 +1,6 @@
 const GameState = require('./models/stateSchema')
 const UserConvo = require('./models/userConvoSchema')
-const { generateStoryLine } = require('./storyCreationService')
+const { handleUserAction } = require('./storyCreationService')
 const { searchCreateVector } = require('./vectorService.js')
 
 const getState = async (req, res) => {
@@ -56,7 +56,14 @@ const takeAction = async(req, res) => {
         await user.save()
         res.json(foundAction.nextStateId)
     } else {
-        const newStoryLine =  await generateStoryLine(user.convo, userAction)
+        const result =  await handleUserAction(user.convo, userAction)
+        if(result.error){
+            return res.status(400).json({
+                error: true,
+                message: result.message,
+            });
+        }
+        const newStoryLine = result.story
         const gameState = new GameState({
             stateName: userAction,
             description: newStoryLine,
