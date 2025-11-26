@@ -28,6 +28,7 @@ const createUserConvo = async (req, res) => {
     const user = new UserConvo(req.body);
     user.currGameState = startState._id;
     user.convo = [{ role: "assistant", content: startState.description}];
+    user.health = 100;
     await user.save();
     res.json(user);
   } catch (err) {
