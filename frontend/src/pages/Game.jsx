@@ -34,8 +34,8 @@ function Game () {
         try{
             const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, {action:message})
             addConvo({role: 'user', content: action})
-            console.log(gameState.data.description)
-            addConvo({role:"assistant", content: gameState.data.description})
+            console.log(gameState)
+            addConvo({role:"assistant", content: gameState.data.state.description})
         }catch(error){
             console.log("we have reached the error")
             const errMessage = error.response.data.message

@@ -55,33 +55,53 @@ const takeAction = async(req, res) => {
         user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: foundAction.nextStateId.description})
         user.currGameState = foundAction.nextStateId
         await user.save()
-        res.json(foundAction.nextStateId)
+        res.json({
+            state: foundAction.nextStateId,
+            health: user.health,
+            healthChange: 0,
+            isDead: user.health <= 0
+        })
     } else {
-        const result =  await handleUserAction(user.convo, userAction)
+        // Pass current health to the LLM
+        const result = await handleUserAction(user.convo, userAction, user.health)
+        console.log(result)
+        console.log(result.healthChange)
         if(result.error){
             return res.status(400).json({
                 error: true,
                 message: result.message,
             });
         }
+        
         const newStoryLine = result.story
+        const healthChange = result.healthChange
+        
+        user.health += healthChange;
+        user.health = Math.max(0, Math.min(100, user.health));
+        
         const gameState = new GameState({
             stateName: userAction,
             description: newStoryLine,
             actions: []
         })
         await gameState.save()
+        
         //pushes the new state into the actions of the curr state
         currState.actions.push({
             actionText: userAction,
             nextStateId: gameState._id
         })
         await currState.save()
+        
         user.convo.push({role: 'user', content: userAction}, {role: 'assistant', content: newStoryLine})
         user.currGameState = gameState._id
         await user.save()
-        res.json(gameState)
 
+        res.json({
+            state: gameState,
+            health: user.health,
+            healthChange: healthChange
+        })
     }
 }
 

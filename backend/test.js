@@ -1,7 +1,7 @@
 const axios = require('axios');
 
-const url = 'http://localhost:3000/api/game';
-const delUrl = 'http://localhost:3000/api/clear-db';
+const url = 'http://localhost:3001/api/game';
+const delUrl = 'http://localhost:3001/api/clear-db';
 
 const testId = 12345
 const testUserData = {
@@ -48,6 +48,8 @@ async function testRun() {
 
     let userConvo2 = await axios.get(`${url}/user/${testId2}`);
     console.log(userConvo.data)
+
+    
 }
 
 testRun();
