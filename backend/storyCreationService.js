@@ -58,42 +58,27 @@ const validateAction = new PromptTemplate({
 
 const checkFeasibility = new PromptTemplate({
     template: `
-        You are a feasibility checker for a fantasy adventure RPG.
-        Your job is to determine if the player’s action is realistically possible
-        based on their inventory, the environment, and physical limitations.
+        You are a feasibility validator for a fantasy adventure game.
 
-        Consider feasibility using:
-            - Inventory (items must exist in context)
-            - Physical realism and effort required
-            - Story continuity (no contradictions)
+        Determine whether the player's action is *reasonably possible* within the game world.
 
         Allowed:
-            - Attempting an action (movement, attack, using known items)
-            - Self-harm actions (but the model must not declare the player dead)
-            - Attacking enemies (but outcome is never guaranteed or stated)
+            - Physical actions the player can do with their body (ex: walk, attack, search)
+            - Attempts that could succeed with effort or luck (ex: climb, hide)
+            - Actions that use items currently in their inventory
 
-        Not feasible:
-            - Declaring guaranteed outcomes for enemies (e.g. "I kill the goblin")
-            - Declaring guaranteed outcomes for self (e.g. "I die")
-            - Using items the player does not have
-            - Performing actions requiring unrealistic strength or abilities
+        Not Allowed:
+            - Using items or abilities the player does not possess
+            - Breaking known storyline constraints (ex: interacting with something that isn’t present)
+            - Impossible physical actions (ex: teleporting without magic)
 
-        Return a JSON object with EXACTLY these fields:
+        If the action is allowed but risky or low-success, still mark it as feasible.
 
+        Return ONLY the following JSON (no markdown, no explanations):
         {{
             "is_feasible": boolean,
             "reason": string
         }}
-
-        Rules:
-            - Do NOT invent new items or abilities
-            - If the action attempts to guarantee a story outcome (enemy or self death),
-            mark as not feasible
-            - Respond ONLY with valid JSON (no backticks, no commentary)
-
-        Game State:
-            Inventory: {inventory}
-            Action: {action}
   `,
   inputVariables: ["action", "inventory"]
 });
@@ -193,7 +178,7 @@ async function handleUserAction(userConvo, action, currentHealth) {
     const feasibility = await checkFeasibility.format({action: res.cleaned_action, inventory: "[]"})
     const rawFeasability = await validateLLM.invoke(feasibility)
     try {
-        res = JSON.parse(rawFeasability.content)
+        resFeasibility = JSON.parse(rawFeasability.content)
     } catch (err) {
         return {
             error: true,
@@ -201,10 +186,10 @@ async function handleUserAction(userConvo, action, currentHealth) {
         };
     }
 
-    if (!res.is_feasible){
+    if (!resFeasibility.is_feasible){
         return {
             error: true,
-            message: res.reason
+            message: resFeasibility.reason
         }
     }
 
