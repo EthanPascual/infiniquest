@@ -56,6 +56,48 @@ const validateAction = new PromptTemplate({
     inputVariables: ["action"]
 })
 
+const checkFeasibility = new PromptTemplate({
+    template: `
+        You are a feasibility checker for a fantasy adventure RPG.
+        Your job is to determine if the player’s action is realistically possible
+        based on their inventory, the environment, and physical limitations.
+
+        Consider feasibility using:
+            - Inventory (items must exist in context)
+            - Physical realism and effort required
+            - Story continuity (no contradictions)
+
+        Allowed:
+            - Attempting an action (movement, attack, using known items)
+            - Self-harm actions (but the model must not declare the player dead)
+            - Attacking enemies (but outcome is never guaranteed or stated)
+
+        Not feasible:
+            - Declaring guaranteed outcomes for enemies (e.g. "I kill the goblin")
+            - Declaring guaranteed outcomes for self (e.g. "I die")
+            - Using items the player does not have
+            - Performing actions requiring unrealistic strength or abilities
+
+        Return a JSON object with EXACTLY these fields:
+
+        {{
+            "is_feasible": boolean,
+            "reason": string
+        }}
+
+        Rules:
+            - Do NOT invent new items or abilities
+            - If the action attempts to guarantee a story outcome (enemy or self death),
+            mark as not feasible
+            - Respond ONLY with valid JSON (no backticks, no commentary)
+
+        Game State:
+            Inventory: {inventory}
+            Action: {action}
+  `,
+  inputVariables: ["action", "inventory"]
+});
+
 
 async function generateStoryLine(userConvo, action, currentHealth) {
     const llm = createLangChainJSON()  // JSON MODE
@@ -69,6 +111,7 @@ async function generateStoryLine(userConvo, action, currentHealth) {
                                 - Write 3-6 sentences in the "story" field
                                 - Do NOT present choices or options
                                 - Describe consequences naturally
+                                - If the user takes or gains damage, it should be clear as to why
                                 - Never mention JSON, health mechanics, or game systems in the story
 
                             Health System (Current: ${currentHealth}/100):
@@ -141,6 +184,24 @@ async function handleUserAction(userConvo, action, currentHealth) {
     }
 
     if (!res.is_valid) {
+        return {
+            error: true,
+            message: res.reason
+        }
+    }
+
+    const feasibility = await checkFeasibility.format({action: res.cleaned_action, inventory: "[]"})
+    const rawFeasability = await validateLLM.invoke(feasibility)
+    try {
+        res = JSON.parse(rawFeasability.content)
+    } catch (err) {
+        return {
+            error: true,
+            message: "Feasability check failed: Model returned invalid JSON"
+        };
+    }
+
+    if (!res.is_feasible){
         return {
             error: true,
             message: res.reason
