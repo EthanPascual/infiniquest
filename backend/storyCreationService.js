@@ -58,28 +58,82 @@ const validateAction = new PromptTemplate({
 })
 
 const checkFeasibility = new PromptTemplate({
-    template: `
-        You are a feasibility validator for a fantasy adventure game.
+  template: `
+    You are a STRICT feasibility validator for a fantasy adventure game.
 
-        Determine whether the player's action is *reasonably possible* within the game world.
+    Your job is to determine whether the player's action is physically and narratively
+    possible using ONLY baseline human capabilities, known abilities, and inventory items.
 
-        Allowed:
-            - Physical actions the player can do with their body (ex: walk, attack, search)
-            - Attempts that could succeed with effort or luck (ex: climb, hide)
-            - Actions that use items currently in their inventory
+    IMPORTANT RULES:
 
-        Not Allowed:
-            - Using items or abilities the player does not possess
-            - Breaking known storyline constraints (ex: interacting with something that isn’t present)
-            - Impossible physical actions (ex: teleporting without magic)
+    1. The player ALWAYS has baseline human capabilities, including:
+        - Moving, running, walking
+        - Punching, kicking, grappling, tackling
+        - Attempting to attack animals or enemies with bare hands
+        - Searching, hiding, shouting, speaking
+        - Interacting with nearby physical objects
 
-        If the action is allowed but risky or low-success, still mark it as feasible.
+    2. These baseline actions are FEASIBLE even if:
+        - They are dangerous
+        - They are likely to fail
+        - The opponent is stronger
+    Success is NOT required for feasibility.
 
-        Return ONLY the following JSON (no markdown, no explanations):
-        {{
-            "is_feasible": boolean,
-            "reason": string
-        }}
+    3. Items are ONLY required when the action explicitly depends on them.
+    Examples:
+        - "I stab the boar" → requires a blade
+        - "I shoot the boar" → requires a ranged weapon
+        - "I heal myself" → requires healing ability or item
+
+    4. Supernatural, magical, or physics-breaking actions are NOT FEASIBLE unless
+        explicitly granted.
+        This includes:
+            - Summoning elements (fire, lightning, ice)
+            - Teleportation
+            - Mind control
+            - Creating energy or matter from nothing
+
+    5. The phrase "I try" or "I attempt" does NOT grant magical or superhuman abilities,
+    but DOES allow normal human attempts (punching, climbing, dodging).
+
+    6. If the action is a normal human physical action, mark it FEASIBLE even if
+    it is reckless or likely to cause harm.
+
+    7. If ANY supernatural ability is required and not explicitly stated, mark NOT FEASIBLE.
+    When uncertain, default to NOT FEASIBLE.
+
+    Examples (IMPORTANT):
+
+    Action: "I punch the boar"
+        → FEASIBLE (baseline human attack)
+
+    Action: "I attack the boar with my fists"
+        → FEASIBLE
+
+    Action: "I wrestle the boar to the ground"
+        → FEASIBLE (dangerous but possible)
+
+    Action: "I stab the boar"
+        → NOT FEASIBLE if no weapon in inventory
+
+    Action: "I summon lightning and strike the boar"
+        → NOT FEASIBLE if wasn't previously granted
+
+    Action: "I try to teleport behind the boar"
+        → NOT FEASIBLE if wasn't previously granted
+
+    Return ONLY the following JSON (no markdown, no explanations):
+
+    {{
+        "is_feasible": boolean,
+        "reason": string
+    }}
+
+    Inventory:
+    {inventory}
+
+    Player Action:
+    {action}
   `,
   inputVariables: ["action", "inventory"]
 });
@@ -179,9 +233,12 @@ const handleUserAction = RunnableSequence.from([
 
         convo: (input) => input.convo,
         currentHealth: (input) => input.currentHealth
+
     }),
 
     (inp) => {
+        console.log(inp.validation)
+        console.log(inp.feasibility)
         if(!inp.validation.is_valid)
             throw new Error("Validation Error: " + inp.validation.reason)
 
