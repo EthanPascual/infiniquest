@@ -1,6 +1,7 @@
 const { createLangChain, createLangChainJSON } = require("./config")
 const { SystemMessage, HumanMessage, AIMessage } = require("@langchain/core/messages");
-const { PromptTemplate } = require("@langchain/core/prompts")
+const { PromptTemplate } = require("@langchain/core/prompts");
+const { RunnableSequence, RunnableMap } = require("@langchain/core/runnables");
 
 const validateAction = new PromptTemplate({
     template: `
@@ -84,8 +85,9 @@ const checkFeasibility = new PromptTemplate({
 });
 
 
+
 async function generateStoryLine(userConvo, action, currentHealth) {
-    const llm = createLangChainJSON()  // JSON MODE
+    const llm = createLangChainJSON()
     const messages = [
         new SystemMessage(`You are a Dungeon Master guiding the user through an open-ended fantasy story. 
 
@@ -153,53 +155,67 @@ async function generateStoryLine(userConvo, action, currentHealth) {
     }
 }
 
-async function handleUserAction(userConvo, action, currentHealth) {
-    const validateLLM = createLangChain()
-    const formattedPrompt = await validateAction.format({ action: action })
-    const raw = await validateLLM.invoke(formattedPrompt)
-    let res;
+const llm  = createLangChainJSON()
+const llm2 = createLangChainJSON()
 
-    try {
-        res = JSON.parse(raw.content)
+const validationChain = validateAction
+    .pipe(llm)
+    .pipe((msg) => JSON.parse(msg.content))
+
+const feasibilityChain = checkFeasibility
+    .pipe(llm2)
+    .pipe((msg) => JSON.parse(msg.content))
+
+const handleUserAction = RunnableSequence.from([
+    RunnableMap.from({
+        validation: (input) =>
+            validationChain.invoke({action: input.action}),
+
+        feasibility: (input) =>
+            feasibilityChain.invoke({
+                action: input.action,
+                inventory: "[]"
+            }),
+
+        convo: (input) => input.convo,
+        currentHealth: (input) => input.currentHealth
+    }),
+
+    (inp) => {
+        if(!inp.validation.is_valid)
+            throw new Error(inp.validation.reason)
+
+        return {
+            ...inp,
+            action: inp.validation.cleaned_action
+        }
+    },
+
+    async (inp) => {
+        const newStoryLine = await generateStoryLine(inp.convo, inp.action, inp.currentHealth)
+        return {
+            error: false,
+            story: newStoryLine.story,
+            healthChange: newStoryLine.healthChange
+        }
+    }
+])
+
+async function handleUserActionHelper(userConvo, action, currentHealth){
+    try{
+        const output = await handleUserAction.invoke({
+            convo: userConvo,
+            action: action,
+            currentHealth: currentHealth
+        })
+
+        return output
     } catch (err) {
         return {
             error: true,
-            message: "Validation failed: Model returned invalid JSON."
-        };
-    }
-
-    if (!res.is_valid) {
-        return {
-            error: true,
-            message: res.reason
+            message: err.message || "Unknown error"
         }
-    }
-
-    const feasibility = await checkFeasibility.format({action: res.cleaned_action, inventory: "[]"})
-    const rawFeasability = await validateLLM.invoke(feasibility)
-    try {
-        resFeasibility = JSON.parse(rawFeasability.content)
-    } catch (err) {
-        return {
-            error: true,
-            message: "Feasability check failed: Model returned invalid JSON"
-        };
-    }
-
-    if (!resFeasibility.is_feasible){
-        return {
-            error: true,
-            message: resFeasibility.reason
-        }
-    }
-
-    const result = await generateStoryLine(userConvo, res.cleaned_action, currentHealth);
-
-    return {
-        error: false,
-        story: result.story,
-        healthChange: result.healthChange
     }
 }
 
-module.exports = { handleUserAction }
+module.exports = { handleUserActionHelper }
