@@ -183,7 +183,10 @@ const handleUserAction = RunnableSequence.from([
 
     (inp) => {
         if(!inp.validation.is_valid)
-            throw new Error(inp.validation.reason)
+            throw new Error("Validation Error: " + inp.validation.reason)
+
+        if(!inp.feasibility.is_feasible)
+            throw new Error("Feasbility Error: " + inp.feasibility.reason)
 
         return {
             ...inp,
