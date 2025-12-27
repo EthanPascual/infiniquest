@@ -63,7 +63,7 @@ const takeAction = async(req, res) => {
         })
     } else {
         // Pass current health to the LLM
-        const result = await handleUserActionHelper(user.convo, userAction, user.health)
+        const result = await handleUserActionHelper(user.convo, userAction, user.health, "None")
         console.log(result)
         console.log(result.healthChange)
         if(result.error){

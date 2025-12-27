@@ -23,6 +23,15 @@ const validateAction = new PromptTemplate({
             - Vague or general first-person actions are allowed:
             ("I get ready", "I prepare myself", "I feel anxious")
 
+            - Influencing or requesting actions from other characters is ALLOWED,
+            as long as the player does not decide the outcome.
+            ("I ask the priest to heal me" is valid)
+            ("I persuade the guard to open the gate" is valid)
+
+            - Actions that REMOVE agency from other characters are NOT allowed.
+            ("I make the priest heal me" is invalid)
+            ("I force the guard to obey me" is invalid)
+
         Forbidden:
             - Any action not written in first person
             ("he sharpens his sword", "my friend grabs his bow")
@@ -102,6 +111,14 @@ const checkFeasibility = new PromptTemplate({
     7. If ANY supernatural ability is required and not explicitly stated, mark NOT FEASIBLE.
     When uncertain, default to NOT FEASIBLE.
 
+    8. If the action is a REQUEST, ATTEMPT, or COMMUNICATION with another character,
+    evaluate ONLY whether the player can make the request — NOT whether the
+    requested outcome will succeed.
+
+    - Asking, requesting, persuading, or negotiating with NPCs is FEASIBLE
+    as long as it does not grant the player supernatural control.
+    - The outcome of NPC decisions is handled by the story engine, not feasibility.
+
     Examples (IMPORTANT):
 
     Action: "I punch the boar"
@@ -140,33 +157,32 @@ const checkFeasibility = new PromptTemplate({
 
 
 
-async function generateStoryLine(userConvo, action, currentHealth) {
+async function generateStoryLine(userConvo, action, currentHealth, inventory) {
     const llm = createLangChainJSON()
     const messages = [
-        new SystemMessage(`You are a Dungeon Master guiding the user through an open-ended fantasy story. 
+        new SystemMessage(`
+                You are a Dungeon Master guiding the user through an open-ended fantasy story.
 
-                            You must respond with valid JSON in this format:
-                            {"story": "your story text", "healthChange": number}
+                You MUST respond with valid JSON in this exact format:
+                {"story": string, "healthChange": number}
 
-                            Story Guidelines:
-                                - Write 3-6 sentences in the "story" field
-                                - Do NOT present choices or options
-                                - Describe consequences naturally
-                                - If the user takes or gains damage, it should be clear as to why
-                                - Never mention JSON, health mechanics, or game systems in the story
+                Rules:
+                    - Write 3–6 sentences in "story"
+                    - Do NOT present choices or options
+                    - Describe consequences naturally
+                    - Never mention JSON, health mechanics, or game systems
+                    - Assume the action has already passed validation and feasibility
+                    - Only use objects found in the inventory to create the storyline. If None, generate a storyline without using any items.
+                        inventory: ${inventory}
 
-                            Health System (Current: ${currentHealth}/100):
-                                - Combat/danger: -5 to -25 damage
-                                - Direct hits: -10 to -30 damage
-                                - Severe trauma (falls, explosions): -30 to -50 damage
-                                - Healing (potions, rest, magic): +10 to +30
-                                - Dodges/blocks: 0 to -5 damage
-                                - Safe actions: 0 change
-
-                            Examples:
-                            {"story": "You swing at the goblin. It dodges but scratches your arm.", "healthChange": -12}
-                            {"story": "You drink the potion. Warmth spreads as your wounds close.", "healthChange": 25}
-                            {"story": "The innkeeper shares rumors of nearby bandits.", "healthChange": 0}`)
+                Current Health: ${currentHealth}/100
+                Health Change Guidelines:
+                    - Combat or danger: -5 to -25
+                    - Direct hits: -10 to -30
+                    - Severe trauma: -30 to -50
+                    - Healing: +10 to +30
+                    - Safe actions: 0
+`)
     ];
 
     for (const msg of userConvo) {
@@ -228,11 +244,12 @@ const handleUserAction = RunnableSequence.from([
         feasibility: (input) =>
             feasibilityChain.invoke({
                 action: input.action,
-                inventory: "[]"
+                inventory: input.inventory
             }),
 
         convo: (input) => input.convo,
-        currentHealth: (input) => input.currentHealth
+        currentHealth: (input) => input.currentHealth,
+        inventory: (input) => input.inventory
 
     }),
 
@@ -252,7 +269,7 @@ const handleUserAction = RunnableSequence.from([
     },
 
     async (inp) => {
-        const newStoryLine = await generateStoryLine(inp.convo, inp.action, inp.currentHealth)
+        const newStoryLine = await generateStoryLine(inp.convo, inp.action, inp.currentHealth, inp.inventory)
         return {
             error: false,
             story: newStoryLine.story,
@@ -261,12 +278,13 @@ const handleUserAction = RunnableSequence.from([
     }
 ])
 
-async function handleUserActionHelper(userConvo, action, currentHealth){
+async function handleUserActionHelper(userConvo, action, currentHealth, inventory){
     try{
         const output = await handleUserAction.invoke({
             convo: userConvo,
             action: action,
-            currentHealth: currentHealth
+            currentHealth: currentHealth,
+            inventory: inventory
         })
 
         return output
