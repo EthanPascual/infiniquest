@@ -1,6 +1,6 @@
 const GameState = require('./models/stateSchema')
 const UserConvo = require('./models/userConvoSchema')
-const { handleUserActionHelper } = require('./storyCreationService')
+const { handleUserActionHelper } = require('./handleAction')
 const { searchCreateVector } = require('./vectorService.js')
 
 const getState = async (req, res) => {
