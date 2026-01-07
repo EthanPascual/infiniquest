@@ -8,12 +8,9 @@ function Game() {
     const navigate = useNavigate();
     const [convo, setConvo] = useState([]);
     const [action, setAction] = useState("");
-    
-    // Player stats
+
     const [health, setHealth] = useState(100);
     const [maxHealth] = useState(100);
-    const [level, setLevel] = useState(1);
-    const [experience, setExperience] = useState(0);
 
     useEffect(() => {
         const sessionId = sessionStorage.getItem("sessionId");
