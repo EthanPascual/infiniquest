@@ -19,17 +19,10 @@ function Game() {
         const sessionId = sessionStorage.getItem("sessionId");
         if (!sessionId) return;
 
-<<<<<<< HEAD
-        async function fetchConvo(id) {
-            const res = await axios.get(`http://localhost:3001/api/game/user/${id}`);
-            setConvo(res.data.convo);
-        }
-=======
     async function fetchConvo(id) {
         const res = await axios.get(`https://infiniquestbackend.onrender.com/api/game/user/${id}`)
         setConvo(res.data.convo)
     }
->>>>>>> main
 
         fetchConvo(sessionId);
     }, []);
