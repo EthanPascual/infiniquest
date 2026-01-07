@@ -6,11 +6,9 @@ const {connectDB, connectVectorDB} = require('./config.js')
 const gameRoutes = require('./gameRoutes.js')
 const cors = require('cors')
 
-const corsOptions = {
-    origin: "https://infiniquest.onrender.com/"
-}
 
-app.use(cors(corsOptions));
+
+app.use(cors());
 app.use(express.json());
 
 connectDB();
