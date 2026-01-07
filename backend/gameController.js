@@ -1,6 +1,6 @@
 const GameState = require('./models/stateSchema')
 const UserConvo = require('./models/userConvoSchema')
-const { handleUserActionHelper } = require('./storyCreationService')
+const { handleUserActionHelper } = require('./handleAction')
 const { searchCreateVector } = require('./vectorService.js')
 
 const getState = async (req, res) => {
@@ -63,7 +63,7 @@ const takeAction = async(req, res) => {
         })
     } else {
         // Pass current health to the LLM
-        const result = await handleUserActionHelper(user.convo, userAction, user.health)
+        const result = await handleUserActionHelper(user.convo, userAction, user.health, "None")
         console.log(result)
         console.log(result.healthChange)
         if(result.error){

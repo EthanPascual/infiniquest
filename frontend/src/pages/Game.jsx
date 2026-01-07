@@ -19,10 +19,17 @@ function Game() {
         const sessionId = sessionStorage.getItem("sessionId");
         if (!sessionId) return;
 
+<<<<<<< HEAD
         async function fetchConvo(id) {
             const res = await axios.get(`http://localhost:3001/api/game/user/${id}`);
             setConvo(res.data.convo);
         }
+=======
+    async function fetchConvo(id) {
+        const res = await axios.get(`https://infiniquestbackend.onrender.com/api/game/user/${id}`)
+        setConvo(res.data.convo)
+    }
+>>>>>>> main
 
         fetchConvo(sessionId);
     }, []);
@@ -36,18 +43,18 @@ function Game() {
         const sessionId = sessionStorage.getItem("sessionId");
         console.log("submitted an action");
         
-        let message = action;
-        setAction("");
-        try {
-            const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, { action: message });
-            addConvo({ role: 'user', content: message });
-            console.log(gameState);
-            addConvo({ role: "assistant", content: gameState.data.state.description });
-        } catch (error) {
-            console.log("we have reached the error");
-            const errMessage = error.response.data.message;
-            console.log(errMessage);
-            alert(errMessage);
+        let message = action
+        setAction("")
+        try{
+            const gameState = await axios.put(`https://infiniquestbackend.onrender.com/api/game/${sessionId}/action`, {action:message})
+            addConvo({role: 'user', content: action})
+            console.log(gameState)
+            addConvo({role:"assistant", content: gameState.data.state.description})
+        }catch(error){
+            console.log("we have reached the error")
+            const errMessage = error.response.data.message
+            console.log(errMessage)
+            alert(errMessage)
         }
     };
 

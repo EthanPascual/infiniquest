@@ -3,116 +3,33 @@ const { SystemMessage, HumanMessage, AIMessage } = require("@langchain/core/mess
 const { PromptTemplate } = require("@langchain/core/prompts");
 const { RunnableSequence, RunnableMap } = require("@langchain/core/runnables");
 
-const validateAction = new PromptTemplate({
-    template: `
-        You are an action validator for a fantasy adventure game.
 
-        Your job is to ensure:
-            1. The action is written in FIRST PERSON (I / me / my).
-            2. The action is initiated by the user's character.
-            3. The action does NOT directly control what other characters do.
-            4. The action is a single, clear action by the user.
-
-        Important Clarifications:
-            - If the user's character causes a world change, it is ALLOWED.
-            ("I make the castle explode" is valid)
-            - Spontaneous world changes not caused by the user are NOT allowed.
-            ("The castle explodes" is invalid)
-            - Creating new objects, powers, or impossible effects is allowed because FEASIBILITY will be checked later.
-            Your task is ONLY to confirm that the user is the one doing it.
-            - Vague or general first-person actions are allowed:
-            ("I get ready", "I prepare myself", "I feel anxious")
-
-        Forbidden:
-            - Any action not written in first person
-            ("he sharpens his sword", "my friend grabs his bow")
-            - Directly controlling or deciding other characters' actions or states
-            ("I make the guard fall asleep", "I force the king to kneel")
-            - Narration not tied to the user's action
-            ("the world shakes", "a dragon appears", "the sun disappears")
-
-        Allowed:
-            - Movements
-            - Speech
-            - Fighting/actions
-            - Using items
-            - Feelings/thoughts
-            - Any world interaction CAUSED BY the character
-
-        Return ONLY the following JSON (no markdown, no explanations):
-
-        {{
-            "is_valid": boolean,
-            "cleaned_action": string,
-            "reason": string
-        }}
-
-        Rules:
-            - If invalid: cleaned_action = "".
-            - cleaned_action must restate the user action in literal first-person form.
-            - No storytelling or extra comments.
-
-        User action: {action}
-    `,
-    inputVariables: ["action"]
-})
-
-const checkFeasibility = new PromptTemplate({
-    template: `
-        You are a feasibility validator for a fantasy adventure game.
-
-        Determine whether the player's action is *reasonably possible* within the game world.
-
-        Allowed:
-            - Physical actions the player can do with their body (ex: walk, attack, search)
-            - Attempts that could succeed with effort or luck (ex: climb, hide)
-            - Actions that use items currently in their inventory
-
-        Not Allowed:
-            - Using items or abilities the player does not possess
-            - Breaking known storyline constraints (ex: interacting with something that isn’t present)
-            - Impossible physical actions (ex: teleporting without magic)
-
-        If the action is allowed but risky or low-success, still mark it as feasible.
-
-        Return ONLY the following JSON (no markdown, no explanations):
-        {{
-            "is_feasible": boolean,
-            "reason": string
-        }}
-  `,
-  inputVariables: ["action", "inventory"]
-});
-
-
-
-async function generateStoryLine(userConvo, action, currentHealth) {
+async function generateStoryLine(userConvo, action, currentHealth, inventory) {
     const llm = createLangChainJSON()
     const messages = [
-        new SystemMessage(`You are a Dungeon Master guiding the user through an open-ended fantasy story. 
+        new SystemMessage(`
+                You are a Dungeon Master guiding the user through an open-ended fantasy story.
 
-                            You must respond with valid JSON in this format:
-                            {"story": "your story text", "healthChange": number}
+                You MUST respond with valid JSON in this exact format:
+                {"story": string, "healthChange": number}
 
-                            Story Guidelines:
-                                - Write 3-6 sentences in the "story" field
-                                - Do NOT present choices or options
-                                - Describe consequences naturally
-                                - If the user takes or gains damage, it should be clear as to why
-                                - Never mention JSON, health mechanics, or game systems in the story
+                Rules:
+                    - Write 3–6 sentences in "story"
+                    - Do NOT present choices or options
+                    - Describe consequences naturally
+                    - Never mention JSON, health mechanics, or game systems
+                    - Assume the action has already passed validation and feasibility
+                    - Only use objects found in the inventory to create the storyline. If None, generate a storyline without using any items.
+                        inventory: ${inventory}
 
-                            Health System (Current: ${currentHealth}/100):
-                                - Combat/danger: -5 to -25 damage
-                                - Direct hits: -10 to -30 damage
-                                - Severe trauma (falls, explosions): -30 to -50 damage
-                                - Healing (potions, rest, magic): +10 to +30
-                                - Dodges/blocks: 0 to -5 damage
-                                - Safe actions: 0 change
-
-                            Examples:
-                            {"story": "You swing at the goblin. It dodges but scratches your arm.", "healthChange": -12}
-                            {"story": "You drink the potion. Warmth spreads as your wounds close.", "healthChange": 25}
-                            {"story": "The innkeeper shares rumors of nearby bandits.", "healthChange": 0}`)
+                Current Health: ${currentHealth}/100
+                Health Change Guidelines:
+                    - Combat or danger: -5 to -25
+                    - Direct hits: -10 to -30
+                    - Severe trauma: -30 to -50
+                    - Healing: +10 to +30
+                    - Safe actions: 0
+`)
     ];
 
     for (const msg of userConvo) {
@@ -155,70 +72,4 @@ async function generateStoryLine(userConvo, action, currentHealth) {
     }
 }
 
-const llm  = createLangChainJSON()
-const llm2 = createLangChainJSON()
-
-const validationChain = validateAction
-    .pipe(llm)
-    .pipe((msg) => JSON.parse(msg.content))
-
-const feasibilityChain = checkFeasibility
-    .pipe(llm2)
-    .pipe((msg) => JSON.parse(msg.content))
-
-const handleUserAction = RunnableSequence.from([
-    RunnableMap.from({
-        validation: (input) =>
-            validationChain.invoke({action: input.action}),
-
-        feasibility: (input) =>
-            feasibilityChain.invoke({
-                action: input.action,
-                inventory: "[]"
-            }),
-
-        convo: (input) => input.convo,
-        currentHealth: (input) => input.currentHealth
-    }),
-
-    (inp) => {
-        if(!inp.validation.is_valid)
-            throw new Error("Validation Error: " + inp.validation.reason)
-
-        if(!inp.feasibility.is_feasible)
-            throw new Error("Feasbility Error: " + inp.feasibility.reason)
-
-        return {
-            ...inp,
-            action: inp.validation.cleaned_action
-        }
-    },
-
-    async (inp) => {
-        const newStoryLine = await generateStoryLine(inp.convo, inp.action, inp.currentHealth)
-        return {
-            error: false,
-            story: newStoryLine.story,
-            healthChange: newStoryLine.healthChange
-        }
-    }
-])
-
-async function handleUserActionHelper(userConvo, action, currentHealth){
-    try{
-        const output = await handleUserAction.invoke({
-            convo: userConvo,
-            action: action,
-            currentHealth: currentHealth
-        })
-
-        return output
-    } catch (err) {
-        return {
-            error: true,
-            message: err.message || "Unknown error"
-        }
-    }
-}
-
-module.exports = { handleUserActionHelper }
+module.exports = { generateStoryLine }
