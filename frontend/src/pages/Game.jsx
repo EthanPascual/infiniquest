@@ -13,7 +13,7 @@ function Game () {
     if (!sessionId) return
 
     async function fetchConvo(id) {
-        const res = await axios.get(`http://localhost:3001/api/game/user/${id}`)
+        const res = await axios.get(`https://infiniquestbackend.onrender.com/api/game/user/${id}`)
         setConvo(res.data.convo)
     }
 
@@ -32,7 +32,7 @@ function Game () {
         let message = action
         setAction("")
         try{
-            const gameState = await axios.put(`http://localhost:3001/api/game/${sessionId}/action`, {action:message})
+            const gameState = await axios.put(`https://infiniquestbackend.onrender.com/api/game/${sessionId}/action`, {action:message})
             addConvo({role: 'user', content: action})
             console.log(gameState)
             addConvo({role:"assistant", content: gameState.data.state.description})
