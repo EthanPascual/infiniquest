@@ -7,7 +7,7 @@ const gameRoutes = require('./gameRoutes.js')
 const cors = require('cors')
 
 const corsOptions = {
-    origin: "http://localhost:5173"
+    origin: "https://infiniquest.onrender.com/"
 }
 
 app.use(cors(corsOptions));
