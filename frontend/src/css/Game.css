@@ -51,6 +51,53 @@
   transform: translateY(-2px);
 }
 
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background-color: rgba(255, 107, 107, 0.2);
+  border-left: 4px solid #ff6b6b;
+  border-bottom: 2px solid rgba(255, 107, 107, 0.3);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.error-icon {
+  font-size: 1.5rem;
+}
+
+.error-message {
+  flex: 1;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.error-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .game-content {
   display: flex;
   flex: 1;
@@ -265,6 +312,11 @@
 
   .game-content {
     padding: 1rem;
+  }
+
+  .error-banner {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
   }
 
   .input-area {

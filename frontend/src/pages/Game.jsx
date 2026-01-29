@@ -8,6 +8,7 @@ function Game() {
     const navigate = useNavigate();
     const [convo, setConvo] = useState([]);
     const [action, setAction] = useState("");
+    const [error, setError] = useState("");
 
     const [health, setHealth] = useState(100);
     const [maxHealth] = useState(100);
@@ -41,10 +42,14 @@ function Game() {
             console.log(gameState)
             addConvo({role:"assistant", content: gameState.data.state.description})
         }catch(error){
-            console.log("we have reached the error")
-            const errMessage = error.response.data.message
-            console.log(errMessage)
-            alert(errMessage)
+            console.log("we have reached the error");
+            const errMessage = error.response?.data?.message || "An error occurred. Please try again.";
+            console.log(errMessage);
+            setError(errMessage);
+            
+            setTimeout(() => {
+                setError("");
+            }, 10000);
         }
     };
 
@@ -56,6 +61,14 @@ function Game() {
                     Home
                 </button>
             </div>
+            {error && (
+                <div className="error-banner">
+                    <span className="error-message">{error}</span>
+                    <button className="error-close" onClick={() => setError("")}>
+                        ✕
+                    </button>
+                </div>
+            )}
 
             <div className="game-content">
                 <div className="stats-panel">
